@@ -442,3 +442,90 @@ def augment(
     _echo(f"Augmented {input_path.name} -> {output.name} ({', '.join(applied) or 'no-op'})")
     if timing:
         _echo(f"Time: {elapsed:.1f}ms")
+
+
+# -- Dataset commands --
+
+dataset_app = typer.Typer(help="Dataset preparation and benchmarking.")
+app.add_typer(dataset_app, name="dataset")
+
+
+@dataset_app.command("prepare")
+def dataset_prepare(
+    src: Path = typer.Argument(..., help="Source image directory.", exists=True),
+    output: Path = typer.Option(..., "--output", "-o", help="Output cache directory."),
+    quality: int = typer.Option(85, "--quality", help="Quality for non-JPEG conversion."),
+):
+    """Pre-extract DCT coefficients to .npz cache for fast loading."""
+    from dct_vision.ml.cache import prepare_cache
+
+    typer.echo(f"Preparing DCT cache: {src} -> {output}")
+    stats = prepare_cache(str(src), str(output), quality=quality)
+    typer.echo(f"Cached {stats['count']} images ({stats['total_blocks']} blocks)")
+    typer.echo(f"Cache size: {stats['total_bytes'] / (1024*1024):.1f}MB")
+
+
+@dataset_app.command("info")
+def dataset_info_cmd(
+    root: Path = typer.Argument(..., help="Dataset directory.", exists=True),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON."),
+):
+    """Show dataset statistics."""
+    from dct_vision.ml.cache import dataset_info
+
+    info = dataset_info(str(root))
+    if json_output:
+        typer.echo(json.dumps(info, indent=2))
+    else:
+        typer.echo(f"Root:         {info['root']}")
+        typer.echo(f"Total images: {info['total_images']}")
+        typer.echo(f"  JPEG:       {info['jpeg_count']}")
+        typer.echo(f"  NPZ cache:  {info['npz_count']}")
+        typer.echo(f"  PNG:        {info['png_count']}")
+        typer.echo(f"Classes:      {info['classes']}")
+        if info['class_names']:
+            typer.echo(f"  Names:      {', '.join(info['class_names'])}")
+        typer.echo(f"Total size:   {info['total_size_mb']}MB")
+
+
+@dataset_app.command("bench")
+def dataset_bench(
+    root: Path = typer.Argument(..., help="Dataset directory.", exists=True),
+    mode: str = typer.Option("y_only", "--mode", help="Tensor mode: y_only, ycbcr, dc_only."),
+    batch_size: int = typer.Option(32, "--batch-size", help="Batch size."),
+    resize: str = typer.Option("4,4", "--resize", help="Resize blocks as 'h,w'."),
+    num_batches: int = typer.Option(10, "--batches", help="Number of batches to time."),
+):
+    """Benchmark DCT dataset loading speed."""
+    from dct_vision.ml.dataset import DCTDataset
+
+    rh, rw = [int(x) for x in resize.split(",")]
+
+    ds = DCTDataset(root=str(root), mode=mode, resize_blocks=(rh, rw))
+
+    if len(ds) == 0:
+        typer.echo("No images found.")
+        raise typer.Exit(code=1)
+
+    try:
+        from torch.utils.data import DataLoader
+    except ImportError:
+        typer.echo("PyTorch required for dataset benchmarking.")
+        raise typer.Exit(code=1)
+
+    loader = DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=0)
+
+    import time
+    start = time.perf_counter()
+    count = 0
+    for i, (batch, labels) in enumerate(loader):
+        count += batch.shape[0]
+        if i + 1 >= num_batches:
+            break
+    elapsed = time.perf_counter() - start
+
+    imgs_per_sec = count / elapsed
+    typer.echo(f"Dataset: {root}")
+    typer.echo(f"Mode: {mode}, Resize: {rh}x{rw}, Batch: {batch_size}")
+    typer.echo(f"Loaded {count} images in {elapsed*1000:.0f}ms")
+    typer.echo(f"Throughput: {imgs_per_sec:.0f} images/sec")

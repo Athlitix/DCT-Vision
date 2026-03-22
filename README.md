@@ -116,12 +116,30 @@ img.save("augmented/img_001.jpg")
 | Brightness/contrast jitter | Augment | Random DC/AC perturbation |
 | Gaussian noise | Augment | Add noise to AC coefficients |
 
+## PyTorch Integration
+
+```python
+from dct_vision.ml.dataset import DCTDataset
+from torch.utils.data import DataLoader
+
+dataset = DCTDataset("train/", mode="y_only", resize_blocks=(4, 4),
+                     augmentations=["hflip:p=0.5", "noise:sigma=2.0"])
+loader = DataLoader(dataset, batch_size=32, num_workers=4)
+```
+
+Pre-cache for instant loading:
+```bash
+dv dataset prepare ./train/ -o ./train_dct/
+dv dataset bench ./train/ --mode y_only --batch-size 32
+```
+
 ## Documentation
 
 - [Installation guide](docs/installation.md)
 - [CLI reference](docs/cli-reference.md)
 - [Python API](docs/python-api.md)
 - [Architecture](docs/architecture.md)
+- [ML integration](docs/ml-integration.md)
 
 ## Requirements
 
