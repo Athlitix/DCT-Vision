@@ -1,0 +1,47 @@
+# Virtual environment
+dv-env/
+
+# Project docs (local only)
+CLAUDE.md
+report.md
+dct_vision_project_plan.md
+dct_vision_addendum_cli_docs.md
+dct_vision_update_uv_claudecode.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Type checking
+.mypy_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# uv
+uv.lock
+
+# MkDocs
+site/
+
+# Benchmarks output
+benchmarks/results/
