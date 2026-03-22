@@ -57,4 +57,5 @@ def gaussian_noise(
         quant_tables=img.quant_tables,
         width=img.width, height=img.height,
         comp_info=img.comp_info,
+        source_path=img._source_path,
     )

@@ -41,6 +41,7 @@ class DCTImage:
         width: int,
         height: int,
         comp_info: list[dict] | None = None,
+        source_path: str | None = None,
     ):
         self.y_coeffs = y_coeffs
         self.cb_coeffs = cb_coeffs
@@ -50,6 +51,32 @@ class DCTImage:
         self.height = height
         self.num_components = 1 if cb_coeffs is None else 3
         self.comp_info = comp_info
+        self._source_path = source_path
+
+    def derive(
+        self,
+        y_coeffs: np.ndarray,
+        cb_coeffs: np.ndarray | None = ...,
+        cr_coeffs: np.ndarray | None = ...,
+        width: int | None = None,
+        height: int | None = None,
+    ) -> DCTImage:
+        """Create a new DCTImage inheriting metadata from this one.
+
+        Use this when creating modified versions of an image to preserve
+        source_path, quant_tables, and comp_info automatically.
+        Pass ... (Ellipsis) for cb/cr to copy from self.
+        """
+        return DCTImage(
+            y_coeffs=y_coeffs,
+            cb_coeffs=self.cb_coeffs.copy() if cb_coeffs is ... else cb_coeffs,
+            cr_coeffs=self.cr_coeffs.copy() if cr_coeffs is ... else cr_coeffs,
+            quant_tables=self.quant_tables,
+            width=width if width is not None else self.width,
+            height=height if height is not None else self.height,
+            comp_info=self.comp_info,
+            source_path=self._source_path,
+        )
 
     @classmethod
     def from_file(cls, path: str) -> DCTImage:
@@ -65,9 +92,12 @@ class DCTImage:
         DCTImage
             Image represented as DCT coefficients.
         """
-        from dct_vision._libjpeg.bindings import read_dct_coefficients
-
-        result = read_dct_coefficients(path)
+        try:
+            from dct_vision._libjpeg.native import read_dct_coefficients_native
+            result = read_dct_coefficients_native(path)
+        except (ImportError, OSError):
+            from dct_vision._libjpeg.bindings import read_dct_coefficients
+            result = read_dct_coefficients(path)
         coeffs = result["coefficients"]
 
         y_coeffs = coeffs[0]
@@ -82,6 +112,7 @@ class DCTImage:
             width=result["width"],
             height=result["height"],
             comp_info=result.get("comp_info"),
+            source_path=path,
         )
 
     @classmethod
@@ -209,6 +240,9 @@ class DCTImage:
     def save(self, path: str, quality: int | None = None) -> None:
         """Save DCT coefficients as a JPEG file.
 
+        Uses native libjpeg lossless transcode when possible (source JPEG
+        exists and dimensions unchanged). Falls back to Pillow encode otherwise.
+
         Parameters
         ----------
         path : str
@@ -216,14 +250,25 @@ class DCTImage:
         quality : int, optional
             If None, uses the original quantization tables.
         """
-        from dct_vision._libjpeg.bindings import write_dct_coefficients
-
         coefficients = [self.y_coeffs]
         if self.cb_coeffs is not None:
             coefficients.append(self.cb_coeffs)
         if self.cr_coeffs is not None:
             coefficients.append(self.cr_coeffs)
 
+        # Try native lossless write if we have a source JPEG
+        if self._source_path and quality is None:
+            try:
+                from dct_vision._libjpeg.native import write_dct_coefficients_native
+                write_dct_coefficients_native(
+                    self._source_path, path, coefficients,
+                )
+                return
+            except (ImportError, OSError):
+                pass
+
+        # Fallback to Pillow-based write
+        from dct_vision._libjpeg.bindings import write_dct_coefficients
         write_dct_coefficients(
             path,
             coefficients,

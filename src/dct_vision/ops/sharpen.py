@@ -65,4 +65,5 @@ def sharpen(img: DCTImage, amount: float = 1.5) -> DCTImage:
         width=img.width,
         height=img.height,
         comp_info=img.comp_info,
+        source_path=img._source_path,
     )

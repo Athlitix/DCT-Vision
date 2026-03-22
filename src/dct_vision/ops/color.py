@@ -70,6 +70,7 @@ def adjust_brightness(img: DCTImage, offset: float) -> DCTImage:
         width=img.width,
         height=img.height,
         comp_info=img.comp_info,
+        source_path=img._source_path,
     )
 
 
@@ -125,4 +126,5 @@ def adjust_contrast(img: DCTImage, factor: float) -> DCTImage:
         width=img.width,
         height=img.height,
         comp_info=img.comp_info,
+        source_path=img._source_path,
     )

@@ -190,6 +190,7 @@ def downscale(img: DCTImage, factor: int = 2) -> DCTImage:
         width=new_width,
         height=new_height,
         comp_info=img.comp_info,
+        source_path=img._source_path,
     )
 
 
