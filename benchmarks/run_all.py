@@ -25,6 +25,10 @@ from dct_vision.ops.sharpen import sharpen
 from dct_vision.ops.color import adjust_brightness, adjust_contrast
 from dct_vision.ops.scale import downscale
 from dct_vision.ops.edge import detect_edges
+from dct_vision.augment.flip import horizontal_flip, vertical_flip
+from dct_vision.augment.crop import block_crop
+from dct_vision.augment.jitter import brightness_jitter, contrast_jitter
+from dct_vision.augment.noise import gaussian_noise
 from dct_vision.utils.profiling import time_fn, psnr
 
 BENCH_DIR = Path(__file__).parent / "images"
@@ -81,6 +85,38 @@ def opencv_edges(pixels):
     return cv2.Laplacian(gray, cv2.CV_8U)
 
 
+# -- Augmentation spatial baselines --
+# These simulate the full pipeline: decode -> augment -> re-encode
+
+def pillow_hflip(pixels):
+    return np.array(Image.fromarray(pixels).transpose(Image.FLIP_LEFT_RIGHT), dtype=np.uint8)
+
+def opencv_hflip(pixels):
+    return cv2.flip(pixels, 1)
+
+def pillow_vflip(pixels):
+    return np.array(Image.fromarray(pixels).transpose(Image.FLIP_TOP_BOTTOM), dtype=np.uint8)
+
+def opencv_vflip(pixels):
+    return cv2.flip(pixels, 0)
+
+def pillow_crop(pixels):
+    h, w = pixels.shape[:2]
+    return pixels[:h//2, :w//2].copy()
+
+def opencv_crop(pixels):
+    h, w = pixels.shape[:2]
+    return pixels[:h//2, :w//2].copy()
+
+def pillow_noise(pixels, sigma=10.0):
+    noise = np.random.RandomState(42).normal(0, sigma, pixels.shape)
+    return np.clip(pixels.astype(np.float32) + noise, 0, 255).astype(np.uint8)
+
+def opencv_noise(pixels, sigma=10.0):
+    noise = np.random.RandomState(42).normal(0, sigma, pixels.shape).astype(np.float32)
+    return np.clip(pixels.astype(np.float32) + noise, 0, 255).astype(np.uint8)
+
+
 # -- Operation registry --
 
 OPERATIONS = {
@@ -113,6 +149,26 @@ OPERATIONS = {
         "dct":    lambda img: detect_edges(img, method="laplacian"),
         "pillow": lambda px: pillow_edges(px),
         "opencv": lambda px: opencv_edges(px),
+    },
+    "hflip": {
+        "dct":    lambda img: horizontal_flip(img),
+        "pillow": lambda px: pillow_hflip(px),
+        "opencv": lambda px: opencv_hflip(px),
+    },
+    "vflip": {
+        "dct":    lambda img: vertical_flip(img),
+        "pillow": lambda px: pillow_vflip(px),
+        "opencv": lambda px: opencv_vflip(px),
+    },
+    "crop": {
+        "dct":    lambda img: block_crop(img, 0, 0, img.y_coeffs.shape[0] // 2, img.y_coeffs.shape[1] // 2),
+        "pillow": lambda px: pillow_crop(px),
+        "opencv": lambda px: opencv_crop(px),
+    },
+    "noise": {
+        "dct":    lambda img: gaussian_noise(img, sigma=5.0, seed=42),
+        "pillow": lambda px: pillow_noise(px, sigma=10.0),
+        "opencv": lambda px: opencv_noise(px, sigma=10.0),
     },
 }
 
