@@ -88,6 +88,12 @@ img.save("augmented/img_001.jpg")
 | Contrast | Tier 1 | Scale AC coefficients (deviation from mean) |
 | Downscale 2x | Tier 1 | Merge 2x2 block groups via transform matrix |
 | Edge detection | Tier 2 | Laplacian or gradient in frequency domain |
+| Sobel edge detection | Tier 1 | Directional frequency gradient weights |
+| Scharr edge detection | Tier 1 | Weighted directional gradient (more accurate) |
+| Box blur | Tier 1 | Sinc-like frequency envelope |
+| Emboss | Tier 1 | Directional frequency emphasis |
+| Band-pass filter | Tier 1 | Keep mid-frequency coefficients (no OpenCV equivalent) |
+| Unsharp mask | Tier 1 | 1 + amount * (1 - Gaussian envelope) |
 | Quality estimation | Tier 1 | Reverse-engineer quality from quant tables |
 | Horizontal/vertical flip | Augment | Negate odd-indexed frequency coefficients |
 | Block crop | Augment | Slice coefficient array directly |

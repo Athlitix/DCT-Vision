@@ -112,6 +112,48 @@ edges_grad = detect_edges(img, method="gradient")
 # Returns grayscale DCTImage
 ```
 
+### Sobel / Scharr Edge Detection
+
+```python
+from dct_vision.ops.filters import sobel, scharr
+
+edges = sobel(img, direction="both")        # or "horizontal", "vertical"
+edges = scharr(img, direction="horizontal") # more accurate than Sobel
+```
+
+### Box Blur
+
+```python
+from dct_vision.ops.filters import box_blur
+
+blurred = box_blur(img, radius=3)
+```
+
+### Emboss
+
+```python
+from dct_vision.ops.filters import emboss
+
+relief = emboss(img, angle=45)   # angle in degrees
+```
+
+### Band-pass Filter
+
+```python
+from dct_vision.ops.filters import bandpass
+
+# Keep only mid-frequency content (no OpenCV equivalent)
+mid = bandpass(img, low_cutoff=2, high_cutoff=5)
+```
+
+### Unsharp Mask
+
+```python
+from dct_vision.ops.filters import unsharp_mask
+
+sharp = unsharp_mask(img, sigma=2.0, amount=1.5)
+```
+
 ### Quality Estimation
 
 ```python
