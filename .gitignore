@@ -44,4 +44,4 @@ uv.lock
 site/
 
 # Benchmarks
-benchmarks/images/
+benchmarks/
