@@ -29,6 +29,7 @@ addopts = "-v --tb=short"
 
 [dependency-groups]
 dev = [
+    "opencv-python-headless>=4.13.0.92",
     "pytest>=9.0.2",
     "pytest-cov>=7.1.0",
 ]
