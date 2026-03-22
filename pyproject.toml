@@ -8,7 +8,9 @@ license = { text = "MIT" }
 dependencies = [
     "numpy>=2.2.6",
     "pillow>=12.1.1",
+    "rich>=14.3.3",
     "scipy>=1.15.3",
+    "typer>=0.24.1",
 ]
 
 [project.scripts]
