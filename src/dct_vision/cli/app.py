@@ -117,6 +117,7 @@ def blur(
     output: Path = typer.Option(..., "--output", "-o", help="Output image path."),
     sigma: float = typer.Option(2.0, "--sigma", "-s", help="Gaussian blur sigma."),
     channels: ChannelChoice = typer.Option(ChannelChoice.all, "--channels", help="Channels to process."),
+    cross_block: bool = typer.Option(False, "--cross-block", help="Use cross-block strategy (better quality for sigma > 2)."),
     timing: bool = typer.Option(False, "--timing", "-t", help="Print execution time."),
     memory: bool = typer.Option(False, "--memory", help="Print peak memory usage."),
 ):
@@ -130,7 +131,7 @@ def blur(
     img = _load_image(input_path)
 
     def run():
-        return blur_op(img, sigma=sigma, channels=channels.value)
+        return blur_op(img, sigma=sigma, channels=channels.value, cross_block=cross_block)
 
     if memory:
         result, peak_kb = _measure_memory(run)

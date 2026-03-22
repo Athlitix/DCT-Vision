@@ -75,6 +75,48 @@ The path is selected automatically -- no configuration needed.
 
 The mathematical basis is the convolution theorem: convolution in spatial domain equals pointwise multiplication in frequency domain.
 
+## Cross-block boundary strategy
+
+JPEG divides images into independent 8x8 blocks. Operations with a receptive
+field larger than 8 pixels (blur with sigma > 2, edge detection) can produce
+visible seams at block boundaries because each block has no knowledge of its
+neighbors.
+
+The cross-block strategy solves this using overlapping 3x3 block neighborhoods:
+
+```
+For each block (i, j):
+  1. Gather 3x3 neighborhood (9 blocks = 24x24 pixels)
+  2. IDCT only this local 24x24 patch (not the full image)
+  3. Apply spatial operation on the 24x24 patch
+  4. Extract the center 8x8 result
+  5. DCT and quantize back
+```
+
+This is not a full image decode. Each block only decodes a small local
+neighborhood. A batch-IDCT pixel cache decodes all blocks upfront in one
+scipy call, and neighborhoods are assembled from the cache via array slicing.
+
+### Operation tiers
+
+| Tier | Operations | Cross-block needed? |
+|------|-----------|-------------------|
+| Tier 1 | Brightness, contrast, downscale, quality estimation | No (block-local) |
+| Tier 2 | Blur (sigma > 2), edge detection | Yes (overlapping neighborhood) |
+| Tier 3 | Histogram equalization, arbitrary rotation | Full decode required |
+
+### Usage
+
+```python
+from dct_vision.ops.blur import blur
+
+# Naive (fast, may show seams at high sigma)
+result = blur(img, sigma=4.0)
+
+# Cross-block (slower, no seams)
+result = blur(img, sigma=4.0, cross_block=True)
+```
+
 ## Dependencies
 
 Production (shipped with package):

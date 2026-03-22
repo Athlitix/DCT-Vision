@@ -82,7 +82,7 @@ img.save("augmented/img_001.jpg")
 
 | Operation | Type | How it works |
 |-----------|------|-------------|
-| Gaussian blur | Tier 1 | Multiply coefficients by Gaussian envelope |
+| Gaussian blur | Tier 1/2 | Multiply coefficients by Gaussian envelope (cross-block for sigma > 2) |
 | Sharpening | Tier 1 | Boost high-frequency coefficients |
 | Brightness | Tier 1 | Offset DC coefficient (block mean) |
 | Contrast | Tier 1 | Scale AC coefficients (deviation from mean) |

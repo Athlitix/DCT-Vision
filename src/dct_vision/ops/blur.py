@@ -61,6 +61,7 @@ def blur(
     img: DCTImage,
     sigma: float,
     channels: str = "all",
+    cross_block: bool = False,
 ) -> DCTImage:
     """Apply Gaussian blur in DCT domain.
 
@@ -72,6 +73,10 @@ def blur(
         Gaussian blur sigma. Larger = more blur. Must be > 0.
     channels : str
         'all' (default), 'luma', or 'chroma'.
+    cross_block : bool
+        Use 3x3 block neighborhood strategy for cross-boundary smoothness.
+        Recommended for sigma > 2.0 to avoid block seam artifacts.
+        Slower but higher quality.
 
     Returns
     -------
@@ -85,6 +90,10 @@ def blur(
     """
     if sigma <= 0:
         raise ValueError(f"sigma must be > 0, got {sigma}")
+
+    if cross_block:
+        from dct_vision.ops.cross_block import cross_block_blur
+        return cross_block_blur(img, sigma=sigma, channels=channels)
 
     envelope = gaussian_envelope(sigma)
 

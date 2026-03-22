@@ -49,7 +49,15 @@ from dct_vision.ops.blur import blur
 
 blurred = blur(img, sigma=2.0)
 blurred = blur(img, sigma=3.0, channels="luma")  # blur only Y channel
+
+# Cross-block strategy for large sigma (avoids block boundary seams)
+blurred = blur(img, sigma=4.0, cross_block=True)
 ```
+
+For `sigma > 2.0`, the `cross_block=True` flag is recommended. It uses a 3x3
+block neighborhood to provide context across block boundaries, producing
+smoother results at the cost of slightly more computation. See
+[Architecture](architecture.md) for details on how the cross-block strategy works.
 
 ### Sharpen
 

@@ -20,6 +20,7 @@ Apply Gaussian blur in DCT domain.
 ```bash
 dv blur input.jpg -o output.jpg --sigma 2.0
 dv blur input.jpg -o output.jpg --sigma 3.0 --channels luma
+dv blur input.jpg -o output.jpg --sigma 4.0 --cross-block
 dv blur input.jpg -o output.jpg --sigma 2.0 --timing
 ```
 
@@ -28,8 +29,12 @@ dv blur input.jpg -o output.jpg --sigma 2.0 --timing
 | `-o / --output` | required | Output file path |
 | `-s / --sigma` | 2.0 | Gaussian sigma (higher = more blur) |
 | `--channels` | all | Channels to process: all, luma, chroma |
+| `--cross-block` | false | Use 3x3 block neighborhood for cross-boundary smoothness |
 | `-t / --timing` | false | Print execution time |
 | `--memory` | false | Print peak memory usage |
+
+The `--cross-block` flag is recommended for `sigma > 2.0`. Without it, block
+boundary seams may be visible at high sigma values.
 
 ### sharpen
 
