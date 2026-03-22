@@ -1,21 +1,43 @@
 [project]
 name = "dct-vision"
 version = "0.1.0"
-description = "Frequency-domain native image processing — skip the pixel decode."
+description = "Frequency-domain native image processing -- skip the pixel decode."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
+authors = [
+    { name = "Athlitix" },
+]
+keywords = ["dct", "jpeg", "image-processing", "frequency-domain", "computer-vision"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: Multimedia :: Graphics",
+]
 dependencies = [
-    "cffi>=2.0.0",
-    "numpy>=2.2.6",
-    "pillow>=12.1.1",
-    "rich>=14.3.3",
-    "scipy>=1.15.3",
-    "typer>=0.24.1",
+    "numpy>=1.24",
+    "scipy>=1.11",
+    "Pillow>=10.0",
+    "typer>=0.9",
+    "rich>=13.0",
+    "cffi>=1.15",
 ]
 
+[project.urls]
+Homepage = "https://github.com/athlitix/dct-vision"
+Repository = "https://github.com/athlitix/dct-vision"
+Documentation = "https://github.com/athlitix/dct-vision/tree/main/docs"
+Issues = "https://github.com/athlitix/dct-vision/issues"
+
 [project.scripts]
-dv = "dct_vision.cli.app:main"
+dv = "dct_vision.cli.app:app"
 
 [build-system]
 requires = ["hatchling"]
@@ -30,7 +52,7 @@ addopts = "-v --tb=short"
 
 [dependency-groups]
 dev = [
-    "opencv-python-headless>=4.13.0.92",
-    "pytest>=9.0.2",
-    "pytest-cov>=7.1.0",
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "opencv-python-headless>=4.8",
 ]
