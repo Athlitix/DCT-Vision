@@ -99,6 +99,17 @@ img.save("augmented/img_001.jpg")
 | Wiener denoising | Tier 1 | Optimal frequency-domain noise filter |
 | JPEG deblocking | Tier 1 | Attenuate high-freq quantization artifacts |
 | Perceptual hash (pHash) | Tier 1 | Hash from DC coefficients (native DCT advantage) |
+| Blur detection | Analysis | High-freq to total energy ratio |
+| Noise estimation | Analysis | Std of highest-frequency coefficients |
+| Texture complexity | Analysis | Nonzero AC coefficient ratio |
+| Image similarity | Analysis | Normalized cross-correlation of coefficients |
+| Vignette | Photo | Distance-weighted block attenuation |
+| Sepia / tint | Photo | Set Cb/Cr to fixed warm values |
+| Grayscale conversion | Photo | Drop Cb/Cr channels (zero cost) |
+| Posterize | Photo | Aggressive coefficient requantization |
+| Solarize | Photo | Invert coefficients above threshold |
+| Requantize (change JPEG quality) | Compression | Apply new quant table without decode |
+| Coefficient pruning | Compression | Zero small AC coefficients to reduce file size |
 | Quality estimation | Tier 1 | Reverse-engineer quality from quant tables |
 | Horizontal/vertical flip | Augment | Negate odd-indexed frequency coefficients |
 | Block crop | Augment | Slice coefficient array directly |

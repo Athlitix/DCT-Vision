@@ -1,6 +1,6 @@
 [project]
 name = "dct-vision"
-version = "0.1.0"
+version = "0.2.0"
 description = "Frequency-domain native image processing -- skip the pixel decode."
 readme = "README.md"
 requires-python = ">=3.10"
