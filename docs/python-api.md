@@ -154,6 +154,52 @@ from dct_vision.ops.filters import unsharp_mask
 sharp = unsharp_mask(img, sigma=2.0, amount=1.5)
 ```
 
+### Color Temperature
+
+```python
+from dct_vision.ops.color import adjust_color_temperature
+
+warm = adjust_color_temperature(img, shift=30)   # warmer (more red/yellow)
+cool = adjust_color_temperature(img, shift=-30)  # cooler (more blue)
+```
+
+### Saturation
+
+```python
+from dct_vision.ops.color import adjust_saturation
+
+vivid = adjust_saturation(img, factor=2.0)      # more saturated
+muted = adjust_saturation(img, factor=0.3)      # desaturated
+```
+
+### Wiener Denoising
+
+```python
+from dct_vision.ops.denoise import wiener_denoise
+
+denoised = wiener_denoise(img, noise_variance=10.0)
+```
+
+### JPEG Deblocking
+
+```python
+from dct_vision.ops.denoise import jpeg_deblock
+
+clean = jpeg_deblock(img, strength=1.5)  # reduce compression artifacts
+```
+
+### Perceptual Hash (pHash)
+
+```python
+from dct_vision.ops.phash import perceptual_hash, hamming_distance, perceptual_hash_hex
+
+h1 = perceptual_hash(img1)
+h2 = perceptual_hash(img2)
+dist = hamming_distance(h1, h2)   # 0 = identical, <10 = very similar
+
+hex_hash = perceptual_hash_hex(img)  # "a3f2b1c04e..."
+```
+
 ### Quality Estimation
 
 ```python

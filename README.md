@@ -94,6 +94,11 @@ img.save("augmented/img_001.jpg")
 | Emboss | Tier 1 | Directional frequency emphasis |
 | Band-pass filter | Tier 1 | Keep mid-frequency coefficients (no OpenCV equivalent) |
 | Unsharp mask | Tier 1 | 1 + amount * (1 - Gaussian envelope) |
+| Color temperature | Tier 1 | Shift Cb/Cr DC coefficients |
+| Saturation | Tier 1 | Scale Cb/Cr coefficients |
+| Wiener denoising | Tier 1 | Optimal frequency-domain noise filter |
+| JPEG deblocking | Tier 1 | Attenuate high-freq quantization artifacts |
+| Perceptual hash (pHash) | Tier 1 | Hash from DC coefficients (native DCT advantage) |
 | Quality estimation | Tier 1 | Reverse-engineer quality from quant tables |
 | Horizontal/vertical flip | Augment | Negate odd-indexed frequency coefficients |
 | Block crop | Augment | Slice coefficient array directly |

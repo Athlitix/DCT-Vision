@@ -128,3 +128,125 @@ def adjust_contrast(img: DCTImage, factor: float) -> DCTImage:
         comp_info=img.comp_info,
         source_path=img._source_path,
     )
+
+
+def adjust_color_temperature(img: DCTImage, shift: float) -> DCTImage:
+    """Adjust color temperature by shifting chroma DC coefficients.
+
+    Positive shift = warmer (more red/yellow), negative = cooler (more blue).
+    Operates on Cb/Cr DC coefficients only.
+
+    Parameters
+    ----------
+    img : DCTImage
+        Input color image.
+    shift : float
+        Temperature shift. Positive = warm, negative = cool.
+
+    Returns
+    -------
+    DCTImage
+
+    Raises
+    ------
+    ValueError
+        If image is grayscale.
+    """
+    if img.cb_coeffs is None:
+        raise ValueError("Color temperature requires a color image (not grayscale).")
+
+    if shift == 0:
+        return DCTImage(
+            y_coeffs=img.y_coeffs.copy(),
+            cb_coeffs=img.cb_coeffs.copy(),
+            cr_coeffs=img.cr_coeffs.copy(),
+            quant_tables=img.quant_tables,
+            width=img.width, height=img.height,
+            comp_info=img.comp_info,
+            source_path=img._source_path,
+        )
+
+    # Get chroma quant table for DC scaling
+    ch_qtable_idx = 1
+    if img.comp_info and len(img.comp_info) > 1:
+        ch_qtable_idx = img.comp_info[1].get("quant_tbl_no", 1)
+    ch_qtable = img.quant_tables[min(ch_qtable_idx, len(img.quant_tables) - 1)]
+    dc_quant = ch_qtable[0, 0]
+
+    dc_delta = int(round(shift * (BLOCK_SIZE / np.sqrt(BLOCK_SIZE * BLOCK_SIZE)) / dc_quant))
+
+    cb = img.cb_coeffs.copy()
+    cr = img.cr_coeffs.copy()
+
+    # Warm: increase Cr (red), decrease Cb (blue)
+    # Cool: increase Cb (blue), decrease Cr (red)
+    cr[:, :, 0, 0] = cr[:, :, 0, 0] + dc_delta
+    cb[:, :, 0, 0] = cb[:, :, 0, 0] - dc_delta
+
+    return DCTImage(
+        y_coeffs=img.y_coeffs.copy(),
+        cb_coeffs=cb, cr_coeffs=cr,
+        quant_tables=img.quant_tables,
+        width=img.width, height=img.height,
+        comp_info=img.comp_info,
+        source_path=img._source_path,
+    )
+
+
+def adjust_saturation(img: DCTImage, factor: float) -> DCTImage:
+    """Adjust color saturation by scaling chroma coefficients.
+
+    Factor > 1 increases saturation, < 1 decreases (0 = grayscale).
+    Operates on both Cb and Cr channels.
+
+    Parameters
+    ----------
+    img : DCTImage
+        Input color image.
+    factor : float
+        Saturation factor. Must be >= 0.
+
+    Returns
+    -------
+    DCTImage
+
+    Raises
+    ------
+    ValueError
+        If factor < 0.
+    """
+    if factor < 0:
+        raise ValueError(f"Saturation factor must be >= 0, got {factor}")
+
+    if img.cb_coeffs is None:
+        return DCTImage(
+            y_coeffs=img.y_coeffs.copy(),
+            cb_coeffs=None, cr_coeffs=None,
+            quant_tables=img.quant_tables,
+            width=img.width, height=img.height,
+            comp_info=img.comp_info,
+            source_path=img._source_path,
+        )
+
+    if factor == 1.0:
+        return DCTImage(
+            y_coeffs=img.y_coeffs.copy(),
+            cb_coeffs=img.cb_coeffs.copy(),
+            cr_coeffs=img.cr_coeffs.copy(),
+            quant_tables=img.quant_tables,
+            width=img.width, height=img.height,
+            comp_info=img.comp_info,
+            source_path=img._source_path,
+        )
+
+    cb = np.round(img.cb_coeffs.astype(np.float32) * factor).astype(np.int16)
+    cr = np.round(img.cr_coeffs.astype(np.float32) * factor).astype(np.int16)
+
+    return DCTImage(
+        y_coeffs=img.y_coeffs.copy(),
+        cb_coeffs=cb, cr_coeffs=cr,
+        quant_tables=img.quant_tables,
+        width=img.width, height=img.height,
+        comp_info=img.comp_info,
+        source_path=img._source_path,
+    )
