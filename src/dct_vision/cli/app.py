@@ -257,6 +257,32 @@ def edges(
         _echo(f"Time: {elapsed:.1f}ms")
 
 
+@app.command()
+def rotate(
+    input_path: Path = typer.Argument(..., help="Input image path.", exists=True),
+    output: Path = typer.Option(..., "--output", "-o", help="Output image path."),
+    degrees: int = typer.Option(90, "--degrees", "-d", help="Clockwise rotation: 0, 90, 180, or 270."),
+    timing: bool = typer.Option(False, "--timing", "-t", help="Print execution time."),
+):
+    """Rotate image losslessly in DCT domain (90-degree multiples)."""
+    from dct_vision.ops.geometry import rotate as rotate_op
+
+    if degrees % 90 != 0:
+        typer.echo("Error: degrees must be a multiple of 90", err=True)
+        raise typer.Exit(code=1)
+
+    img = _load_image(input_path)
+    result, elapsed = _timed(lambda: rotate_op(img, degrees))
+    result.save(str(output))
+
+    _echo(
+        f"Rotated {input_path.name} -> {output.name} "
+        f"({degrees} deg, {result.width}x{result.height})"
+    )
+    if timing:
+        _echo(f"Time: {elapsed:.1f}ms")
+
+
 # -- Format Conversion --
 
 @app.command()

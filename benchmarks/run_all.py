@@ -28,6 +28,7 @@ from dct_vision.ops.color import adjust_brightness, adjust_contrast
 from dct_vision.ops.scale import downscale
 from dct_vision.ops.edge import detect_edges
 from dct_vision.augment.flip import horizontal_flip, vertical_flip
+from dct_vision.ops.geometry import rotate90
 from dct_vision.augment.crop import block_crop
 from dct_vision.augment.jitter import brightness_jitter, contrast_jitter
 from dct_vision.augment.noise import gaussian_noise
@@ -103,6 +104,12 @@ def pillow_vflip(pixels):
 def opencv_vflip(pixels):
     return cv2.flip(pixels, 0)
 
+def pillow_rot90(pixels):
+    return np.array(Image.fromarray(pixels).transpose(Image.ROTATE_270), dtype=np.uint8)  # clockwise
+
+def opencv_rot90(pixels):
+    return cv2.rotate(pixels, cv2.ROTATE_90_CLOCKWISE)
+
 def pillow_crop(pixels):
     h, w = pixels.shape[:2]
     return pixels[:h//2, :w//2].copy()
@@ -163,6 +170,11 @@ OPERATIONS = {
         "pillow": lambda px: pillow_vflip(px),
         "opencv": lambda px: opencv_vflip(px),
     },
+    "rotate90": {
+        "dct":    lambda img: rotate90(img),
+        "pillow": lambda px: pillow_rot90(px),
+        "opencv": lambda px: opencv_rot90(px),
+    },
     "crop": {
         "dct":    lambda img: block_crop(img, 0, 0, img.y_coeffs.shape[0] // 2, img.y_coeffs.shape[1] // 2),
         "pillow": lambda px: pillow_crop(px),
@@ -191,6 +203,7 @@ QUALITY_REF = {
     "edges":      {"fn": lambda px: opencv_edges(px),          "meaningful": True,  "note": "approx"},
     "hflip":      {"fn": lambda px: opencv_hflip(px),          "meaningful": True,  "note": "exact"},
     "vflip":      {"fn": lambda px: opencv_vflip(px),          "meaningful": True,  "note": "exact"},
+    "rotate90":   {"fn": lambda px: opencv_rot90(px),          "meaningful": True,  "note": "exact"},
     "crop":       {"fn": lambda px: opencv_crop(px),           "meaningful": True,  "note": "exact"},
     "noise":      {"fn": None,                                 "meaningful": False, "note": "random"},
 }

@@ -63,6 +63,10 @@ class AugmentationPipeline:
             elif name == "vflip":
                 from dct_vision.augment.flip import vertical_flip
                 img = vertical_flip(img)
+            elif name in ("rotate", "rot90", "rot180", "rot270"):
+                from dct_vision.ops.geometry import rotate as rotate_op
+                degrees = aug.get("degrees", {"rot90": 90, "rot180": 180, "rot270": 270}.get(name, 90))
+                img = rotate_op(img, int(degrees))
             elif name == "brightness_jitter":
                 from dct_vision.augment.jitter import brightness_jitter
                 max_offset = aug.get("max_offset", 20)

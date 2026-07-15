@@ -59,6 +59,23 @@ class TestSharpenCommand:
         assert output.exists()
 
 
+class TestRotateCommand:
+    def test_basic_rotate(self, sample_jpeg, tmp_path):
+        output = tmp_path / "rotated.jpg"
+        result = runner.invoke(app, [
+            "rotate", str(sample_jpeg), "-o", str(output), "--degrees", "90"
+        ])
+        assert result.exit_code == 0, result.output
+        assert output.exists()
+
+    def test_invalid_angle_fails(self, sample_jpeg, tmp_path):
+        output = tmp_path / "rotated.jpg"
+        result = runner.invoke(app, [
+            "rotate", str(sample_jpeg), "-o", str(output), "--degrees", "45"
+        ])
+        assert result.exit_code != 0
+
+
 class TestBrightnessCommand:
     def test_basic_brightness(self, sample_jpeg, tmp_path):
         output = tmp_path / "bright.jpg"
