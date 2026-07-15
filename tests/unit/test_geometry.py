@@ -110,3 +110,54 @@ class TestColorRotation:
         decoded = img.to_pixels()
         out = rotate90(img).to_pixels()
         assert psnr(np.rot90(decoded, -1), out) > 45
+
+
+class TestAsymmetricQuantTable:
+    """Regression: transpose/rotate must transpose the (asymmetric) quant table.
+
+    At quality=100 the quant table is ~all-ones (symmetric) and hides the bug;
+    at lower quality the luminance table is clearly asymmetric.
+    """
+
+    @pytest.mark.parametrize("quality", [50, 75, 90])
+    def test_transpose_exact_at_low_quality(self, quality):
+        img = DCTImage.from_array(_asymmetric_gray(64, 64), quality=quality)
+        base = img.to_pixels()
+        out = transpose(img).to_pixels()
+        assert psnr(base.T, out) > 50
+
+    @pytest.mark.parametrize("quality", [50, 75, 90])
+    def test_rotate90_exact_at_low_quality(self, quality):
+        img = DCTImage.from_array(_asymmetric_gray(64, 64), quality=quality)
+        base = img.to_pixels()
+        out = rotate90(img).to_pixels()
+        assert psnr(np.rot90(base, -1), out) > 50
+
+    def test_subsampled_jpeg_rotate90_exact(self, tmp_path):
+        """A real 4:2:0 JPEG round-tripped through file load."""
+        from PIL import Image
+
+        rng = np.random.default_rng(3)
+        yy, xx = np.mgrid[0:128, 0:128]
+        b = (128 + 40 * np.sin(xx / 9) + rng.normal(0, 6, (128, 128))).clip(0, 255).astype(np.uint8)
+        color = np.stack([b, np.roll(b, 5, 0), np.roll(b, 5, 1)], axis=-1)
+        p = tmp_path / "sub.jpg"
+        Image.fromarray(color).save(str(p), quality=85, subsampling=2)  # 4:2:0
+
+        img = DCTImage.from_file(str(p))
+        base = img.to_pixels()
+        out = rotate90(img).to_pixels()
+        assert psnr(np.rot90(base, -1), out) > 45
+
+    def test_transposed_color_image_saves_and_reloads(self, tmp_path):
+        """Transposed image must save with the correct (transposed) tables."""
+        rng = np.random.default_rng(4)
+        img = DCTImage.from_array(rng.integers(0, 256, (48, 64, 3), dtype=np.uint8), quality=75)
+        rotated = transpose(img)
+        expected = rotated.to_pixels()
+        out_path = tmp_path / "t.jpg"
+        rotated.save(str(out_path))
+        reloaded = DCTImage.from_file(str(out_path)).to_pixels()
+        # Save re-encodes at its own quality, so allow JPEG error but require
+        # the orientation/content to survive (not the ~25dB table-mismatch bug).
+        assert psnr(expected, reloaded) > 35

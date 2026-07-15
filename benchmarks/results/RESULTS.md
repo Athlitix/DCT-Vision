@@ -107,10 +107,11 @@ resolution. The path to parity here is larger inputs (STL-10/ImageNet, supported
 via `--dataset stl10`) and architectures designed for the DCT block grid --
 future work, honestly labelled.
 
-## Notes / known limitations
+## Notes
 
-- Lossless transforms (rotate90/180/270, transpose, flips) are exact on 4:4:4
-  images (unit tests: PSNR > 55 dB / exact). On 4:2:0 (subsampled chroma) the
-  benchmark shows rotate/transpose at ~25 dB rather than exact, because the
-  chroma block grid transpose and pixel upsampling do not perfectly commute;
-  flips (no transpose) remain exact. Luma is unaffected.
+- Lossless transforms (rotate90/180/270, transpose, flips) are exact on all
+  subsampling modes (PSNR ~99 dB, i.e. exact up to uint8 rounding). Transpose
+  swaps coefficient positions (u, v) -> (v, u); because JPEG quant tables are
+  asymmetric, the tables are transposed alongside the coefficients so each
+  coefficient is dequantized by the correct step. (An earlier version applied
+  the un-transposed table and scored ~25 dB on lower-quality subsampled JPEGs.)

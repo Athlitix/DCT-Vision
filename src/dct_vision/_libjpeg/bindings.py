@@ -262,6 +262,7 @@ def write_dct_coefficients(
                 coeffs[i, j] = coeffs[i, j] * qtable
 
         channel = blockwise_idct(coeffs)
+        channel = channel + 128.0  # reverse the JPEG level shift (as the color path does)
         pixels = np.clip(channel[:height, :width], 0, 255).astype(np.uint8)
         img = Image.fromarray(pixels, mode="L")
 

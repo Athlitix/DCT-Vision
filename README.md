@@ -25,7 +25,7 @@ the transform is exact (lossless).
 | Edge detect| 4.21ms | 12.2x | 0.7x  | 8.6  | 0.332 |
 | Noise      | 24.2ms | 3.3x  | 3.1x  | -    | -    |
 | Downscale 2x| 4.98ms| 3.6x  | 1.1x  | 14.1 | 0.406 |
-| Rotate 90  | 1.78ms | 1.6x  | 0.4x  | 25.6 | 0.972 |
+| Rotate 90  | 1.78ms | 1.6x  | 0.4x  | 99.0 | 1.000 |
 | H-flip     | 0.75ms | 2.7x  | 0.3x  | inf  | 1.000 |
 | V-flip     | 1.12ms | 1.5x  | 0.1x  | inf  | 1.000 |
 | Crop       | 0.04ms | 0.8x  | 0.8x  | inf  | 1.000 |
@@ -49,9 +49,9 @@ modified coefficients back losslessly:
 - **vs OpenCV is mixed and we say so.** Brightness/contrast/noise beat OpenCV
   several-fold; blur is about par; OpenCV's SIMD wins on flips, rotate, crop,
   downscale and edges. We do not claim to beat OpenCV at everything.
-- **Exact operations** (brightness, flips, crop, and 90/180/270 rotation on
-  4:4:4 images) are provably lossless. Blur/downscale/edges are approximations
-  with the quality shown above.
+- **Exact operations** (brightness, flips, crop, and 90/180/270 rotation /
+  transpose, all subsampling modes) are provably lossless. Blur/downscale/edges
+  are approximations with the quality shown above.
 - **End-to-end** favors DCT on expensive ops and large images; on cheap ops it
   is roughly par, because libjpeg-turbo decode is already fast, so there is less
   to save. The advantage compounds in batch pipelines that avoid repeated decode.

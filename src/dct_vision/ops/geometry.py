@@ -35,13 +35,17 @@ _SIGN_180 = np.where((_uu + _vv) % 2 == 0, 1.0, -1.0).astype(np.float32)
 
 
 def _transpose_comp_info(comp_info: list[dict] | None) -> list[dict] | None:
-    """Swap horizontal/vertical sampling factors so chroma stays aligned."""
+    """Swap horizontal/vertical sampling factors (and block counts) so chroma
+    stays aligned after a transpose."""
     if comp_info is None:
         return None
     swapped = []
     for c in comp_info:
         d = dict(c)
         d["h_samp_factor"], d["v_samp_factor"] = c.get("v_samp_factor", 1), c.get("h_samp_factor", 1)
+        if "width_in_blocks" in c or "height_in_blocks" in c:
+            d["width_in_blocks"] = c.get("height_in_blocks")
+            d["height_in_blocks"] = c.get("width_in_blocks")
         swapped.append(d)
     return swapped
 
@@ -55,6 +59,12 @@ def _transpose_coeffs(coeffs: np.ndarray | None) -> np.ndarray | None:
 
 def transpose(img: DCTImage) -> DCTImage:
     """Transpose an image about its main diagonal, losslessly.
+
+    Because transposing a block swaps coefficient positions (u, v) -> (v, u) and
+    the JPEG quantization tables are not symmetric, the quant tables must be
+    transposed too so each coefficient is dequantized by the right step. The
+    native lossless writer templates off the source JPEG's (un-transposed)
+    tables, so ``source_path`` is dropped to force the correct table on save.
 
     Parameters
     ----------
@@ -70,11 +80,11 @@ def transpose(img: DCTImage) -> DCTImage:
         y_coeffs=_transpose_coeffs(img.y_coeffs),
         cb_coeffs=_transpose_coeffs(img.cb_coeffs),
         cr_coeffs=_transpose_coeffs(img.cr_coeffs),
-        quant_tables=img.quant_tables,
+        quant_tables=[np.ascontiguousarray(q.T) for q in img.quant_tables],
         width=img.height,
         height=img.width,
         comp_info=_transpose_comp_info(img.comp_info),
-        source_path=img._source_path,
+        source_path=None,
     )
 
 
