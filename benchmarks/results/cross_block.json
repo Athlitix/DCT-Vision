@@ -1,0 +1,73 @@
+{
+  "image": "bench_512x512_q95.jpg",
+  "sigmas": [
+    0.5,
+    1.0,
+    2.0,
+    4.0,
+    8.0
+  ],
+  "seam_threshold_sigma": 0.5,
+  "results": [
+    {
+      "sigma": 0.5,
+      "gt_blockiness": -0.217,
+      "per_block_psnr": 16.52,
+      "per_block_ssim": 0.0973,
+      "per_block_blockiness": 7.022,
+      "per_block_ms": 1.162,
+      "cross_block_psnr": 29.8,
+      "cross_block_ssim": 0.9976,
+      "cross_block_blockiness": -0.173,
+      "cross_block_ms": 195.575
+    },
+    {
+      "sigma": 1.0,
+      "gt_blockiness": -0.217,
+      "per_block_psnr": 23.67,
+      "per_block_ssim": 0.5972,
+      "per_block_blockiness": 9.329,
+      "per_block_ms": 0.266,
+      "cross_block_psnr": 27.32,
+      "cross_block_ssim": 0.9942,
+      "cross_block_blockiness": 0.258,
+      "cross_block_ms": 205.228
+    },
+    {
+      "sigma": 2.0,
+      "gt_blockiness": -0.217,
+      "per_block_psnr": 27.25,
+      "per_block_ssim": 0.6168,
+      "per_block_blockiness": 13.436,
+      "per_block_ms": 0.233,
+      "cross_block_psnr": 32.37,
+      "cross_block_ssim": 0.9956,
+      "cross_block_blockiness": 0.246,
+      "cross_block_ms": 219.529
+    },
+    {
+      "sigma": 4.0,
+      "gt_blockiness": -0.217,
+      "per_block_psnr": 19.54,
+      "per_block_ssim": 0.1242,
+      "per_block_blockiness": 13.957,
+      "per_block_ms": 0.253,
+      "cross_block_psnr": 38.11,
+      "cross_block_ssim": 0.9954,
+      "cross_block_blockiness": 0.173,
+      "cross_block_ms": 236.944
+    },
+    {
+      "sigma": 8.0,
+      "gt_blockiness": -0.217,
+      "per_block_psnr": 15.17,
+      "per_block_ssim": 0.0408,
+      "per_block_blockiness": 6.916,
+      "per_block_ms": 0.231,
+      "cross_block_psnr": 42.38,
+      "cross_block_ssim": 0.992,
+      "cross_block_blockiness": 0.69,
+      "cross_block_ms": 276.575
+    }
+  ]
+}
