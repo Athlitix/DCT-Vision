@@ -57,4 +57,5 @@ dev = [
     "opencv-python-headless>=4.8",
     "torch>=2.10.0",
     "torchvision>=0.25.0",
+    "scikit-image>=0.25.2",
 ]

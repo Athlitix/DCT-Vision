@@ -8,15 +8,15 @@ from dct_vision.utils.constants import BLOCK_SIZE
 
 
 def _dc_offset_for_brightness(offset: float) -> float:
-    """Convert pixel-space brightness offset to DC coefficient offset.
+    """Convert a pixel-space brightness offset to a DC coefficient offset.
 
-    The DC coefficient in an orthonormal 8x8 DCT equals the block mean
-    multiplied by sqrt(N*M) where N=M=8. So DC = mean * 8.
-    To shift all pixels by `offset`, shift DC by offset * 8 / quant_value.
-    We apply the raw scaled offset and let quantization handle the rest.
+    For an orthonormal 8x8 DCT (scipy ``norm='ortho'``) the DC coefficient is
+    ``DC = sum(pixels) / 8 = mean * 8``. Shifting every pixel by ``offset``
+    raises the block mean by ``offset``, so the (dequantized) DC coefficient
+    must rise by ``offset * 8``. The caller divides by the DC quant step to get
+    the quantized delta.
     """
-    # For orthonormal DCT: DC = sum(pixels) / sqrt(64) = mean * 8
-    return offset * (BLOCK_SIZE / np.sqrt(BLOCK_SIZE * BLOCK_SIZE))
+    return offset * BLOCK_SIZE
 
 
 def adjust_brightness(img: DCTImage, offset: float) -> DCTImage:

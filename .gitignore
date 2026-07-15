@@ -43,5 +43,7 @@ uv.lock
 # MkDocs
 site/
 
-# Benchmarks
-benchmarks/
+# Benchmarks: track the harness + small results JSON; ignore large images and logs
+benchmarks/images/
+benchmarks/results/*.log
+data/

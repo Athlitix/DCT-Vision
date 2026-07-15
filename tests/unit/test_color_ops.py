@@ -77,6 +77,22 @@ class TestAdjustBrightness:
         result_mean = result.to_pixels().mean()
         assert result_mean > original_mean
 
+    @pytest.mark.parametrize("offset", [10, 30, 50])
+    def test_brightness_magnitude_matches_offset(self, offset):
+        """A brightness offset of N should raise the mean luma by ~N pixels.
+
+        Regression test for the DC-offset calibration bug (DC = mean * 8 for
+        orthonormal DCT, so the DC delta must be offset * 8, not offset).
+        Uses a mid-gray, high-quality image so quantization rounding is small
+        and no clipping occurs.
+        """
+        img = DCTImage.from_array(
+            np.full((64, 64), 100, dtype=np.uint8), quality=100
+        )
+        before = img.to_pixels().astype(np.float64).mean()
+        after = adjust_brightness(img, offset=offset).to_pixels().astype(np.float64).mean()
+        assert after - before == pytest.approx(offset, abs=2.0)
+
 
 class TestAdjustContrast:
     def test_factor_greater_than_1_boosts_ac(self):
