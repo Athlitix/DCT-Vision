@@ -1,0 +1,42 @@
+{
+  "config": {
+    "dataset": "cifar10",
+    "models": [
+      "pixelcnn",
+      "dctcnn",
+      "dctfreq"
+    ],
+    "mode": "y_only",
+    "epochs": 15,
+    "batch_size": 128,
+    "subset": 0,
+    "augment": false,
+    "device": "cuda"
+  },
+  "results": [
+    {
+      "name": "pixelcnn",
+      "params": 590794,
+      "final_test_accuracy": 0.8333,
+      "total_time_sec": 117.2,
+      "total_data_time_sec": 6.1,
+      "input": "pixel"
+    },
+    {
+      "name": "dctcnn",
+      "params": 556106,
+      "final_test_accuracy": 0.5788,
+      "total_time_sec": 16.8,
+      "total_data_time_sec": 3.9,
+      "input": "dct_y_only"
+    },
+    {
+      "name": "dctfreq",
+      "params": 174602,
+      "final_test_accuracy": 0.5202,
+      "total_time_sec": 19.4,
+      "total_data_time_sec": 4.0,
+      "input": "dct_y_only"
+    }
+  ]
+}

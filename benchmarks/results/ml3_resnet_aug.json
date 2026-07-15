@@ -1,0 +1,33 @@
+{
+  "config": {
+    "dataset": "cifar10",
+    "models": [
+      "pixelresnet",
+      "dctresnet"
+    ],
+    "mode": "y_only",
+    "epochs": 20,
+    "batch_size": 128,
+    "subset": 0,
+    "augment": true,
+    "device": "cuda"
+  },
+  "results": [
+    {
+      "name": "pixelresnet",
+      "params": 11173962,
+      "final_test_accuracy": 0.8964,
+      "total_time_sec": 723.6,
+      "total_data_time_sec": 10.6,
+      "input": "pixel"
+    },
+    {
+      "name": "dctresnet",
+      "params": 11176330,
+      "final_test_accuracy": 0.6382,
+      "total_time_sec": 88.1,
+      "total_data_time_sec": 7.2,
+      "input": "dct_y_only"
+    }
+  ]
+}

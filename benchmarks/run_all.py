@@ -222,13 +222,19 @@ def _align(a, b):
 
 
 def _compute_quality(op_name, dct_img, pixels):
-    """PSNR/SSIM of DCT-domain output vs the spatial ground truth."""
+    """PSNR/SSIM of the DCT-domain op vs the same op applied in the spatial domain.
+
+    The spatial reference is applied to *our* decoded pixels (dct_img.to_pixels()),
+    not a separately PIL-decoded copy, so the metric isolates the operation's
+    error and does not conflate decoder or JPEG-roundtrip differences.
+    """
     ref = QUALITY_REF.get(op_name, {})
     if not ref.get("meaningful") or ref.get("fn") is None:
         return {"psnr_db": None, "ssim": None, "quality_note": ref.get("note", "n/a")}
     try:
+        base = dct_img.to_pixels()
         dct_out = OPERATIONS[op_name]["dct"](dct_img).to_pixels()
-        gt = ref["fn"](pixels)
+        gt = ref["fn"](base)
         a, b = _align(dct_out, gt)
         p = psnr(a, b)
         return {
