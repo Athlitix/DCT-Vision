@@ -71,6 +71,18 @@ def _build_downscale_2x_matrix() -> np.ndarray:
     return T
 
 
+@lru_cache(maxsize=1)
+def _downscale_2x_matrix_flat() -> np.ndarray:
+    """Downscale transform as a dense (64, 256) matrix for BLAS matmul.
+
+    Rows index the output coefficient (u, v); columns index the flattened
+    input (block, iu, iv). Mapping is identical to ``_build_downscale_2x_matrix``
+    but shaped so the whole channel becomes one ``groups @ M.T`` call.
+    """
+    T = _build_downscale_2x_matrix()  # (8, 8, 4, 8, 8) = (ou, ov, b, iu, iv)
+    return np.ascontiguousarray(T.reshape(64, 256))
+
+
 def _downscale_channel_2x(coeffs: np.ndarray, qtable: np.ndarray) -> np.ndarray:
     """Downscale a channel by factor 2 using precomputed transform matrix.
 
@@ -93,21 +105,21 @@ def _downscale_channel_2x(coeffs: np.ndarray, qtable: np.ndarray) -> np.ndarray:
     gh = bh // 2
     gw = bw // 2
 
-    # Get transform matrix: (8, 8, 4, 8, 8)
-    T = _build_downscale_2x_matrix()
-
     # Gather 2x2 block groups into (gh, gw, 4, 8, 8)
-    groups = np.zeros((gh, gw, 4, BLOCK_SIZE, BLOCK_SIZE), dtype=np.float32)
+    groups = np.empty((gh, gw, 4, BLOCK_SIZE, BLOCK_SIZE), dtype=np.float32)
     groups[:, :, 0] = dequant[0::2, 0::2]   # top-left
     groups[:, :, 1] = dequant[0::2, 1::2]   # top-right
     groups[:, :, 2] = dequant[1::2, 0::2]   # bottom-left
     groups[:, :, 3] = dequant[1::2, 1::2]   # bottom-right
 
-    # Apply transform: T has shape (8, 8, 4, 8, 8), groups has (gh, gw, 4, 8, 8)
-    # output[g, h, ou, ov] = sum over (b, iu, iv) of T[ou, ov, b, iu, iv] * groups[g, h, b, iu, iv]
-    result = np.einsum("uvbij,ghbij->ghuv", T, groups)
+    # Apply the transform as a single BLAS matmul:
+    #   out[g, (ou,ov)] = sum_{(b,iu,iv)} groups[g, (b,iu,iv)] * M[(ou,ov), (b,iu,iv)]
+    M = _downscale_2x_matrix_flat()               # (64, 256)
+    flat = groups.reshape(gh * gw, 256)           # (G, 256)
+    result = flat @ M.T                           # (G, 64)
 
     # Requantize
+    result = result.reshape(gh, gw, BLOCK_SIZE, BLOCK_SIZE)
     new_coeffs = np.round(result / qtable).astype(np.int16)
 
     return new_coeffs
