@@ -1,0 +1,24 @@
+{
+  "config": {
+    "dataset": "cifar10",
+    "models": [
+      "dctresnet"
+    ],
+    "mode": "ycbcr",
+    "epochs": 20,
+    "batch_size": 96,
+    "subset": 0,
+    "augment": true,
+    "device": "cuda"
+  },
+  "results": [
+    {
+      "name": "dctresnet",
+      "params": 11184522,
+      "final_test_accuracy": 0.6763,
+      "total_time_sec": 96.8,
+      "total_data_time_sec": 8.2,
+      "input": "dct_ycbcr"
+    }
+  ]
+}

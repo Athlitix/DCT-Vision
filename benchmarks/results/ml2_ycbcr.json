@@ -1,0 +1,24 @@
+{
+  "config": {
+    "dataset": "cifar10",
+    "models": [
+      "dctcnn"
+    ],
+    "mode": "ycbcr",
+    "epochs": 15,
+    "batch_size": 128,
+    "subset": 0,
+    "augment": false,
+    "device": "cuda"
+  },
+  "results": [
+    {
+      "name": "dctcnn",
+      "params": 564298,
+      "final_test_accuracy": 0.6475,
+      "total_time_sec": 19.9,
+      "total_data_time_sec": 4.4,
+      "input": "dct_ycbcr"
+    }
+  ]
+}

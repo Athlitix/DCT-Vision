@@ -49,7 +49,8 @@ dataset = DCTDataset(
 )
 ```
 
-All augmentations run in DCT domain -- no pixel decode.
+All augmentations run in DCT domain -- no pixel decode. Flips and rotations are
+exact (they equal the pixel-domain transform; see the equivalence tests).
 
 ### Augmentation pipeline
 
@@ -57,17 +58,43 @@ All augmentations run in DCT domain -- no pixel decode.
 from dct_vision.ml.augment_pipeline import AugmentationPipeline
 
 # String format
-pipe = AugmentationPipeline(["hflip:p=0.5", "noise:sigma=3.0"])
+pipe = AugmentationPipeline(["hflip:p=0.5", "noise:sigma=3.0"], seed=42)
 
 # Dict format
 pipe = AugmentationPipeline([
     {"name": "hflip", "p": 0.5},
+    {"name": "rot90", "p": 0.25},
     {"name": "brightness_jitter", "max_offset": 20},
     {"name": "crop", "block_rows": 4, "block_cols": 4},
-])
+], seed=42)
 ```
 
-Supported augmentations: hflip, vflip, brightness_jitter, contrast_jitter, noise, crop.
+Supported augmentations: hflip, vflip, rot90/rot180/rot270, brightness_jitter,
+contrast_jitter, noise, crop.
+
+**Reproducibility.** Pass `seed=` to `AugmentationPipeline` (or `DCTDataset`) for
+deterministic augmentation. The pipeline owns a per-process `numpy.random.Generator`
+and folds each `DataLoader` worker's id into the seed, so multi-worker loaders
+produce distinct-but-reproducible streams instead of the identical or
+entropy-correlated draws you get from the global `numpy.random` state after a
+fork.
+
+## Training and validation
+
+`dct_vision.ml.train` compares pixel-RGB, DCT Y-only, and DCT YCbCr inputs on
+CIFAR-10 / STL-10 with CNN and ResNet-18 models, reporting accuracy, wall-clock,
+and data-loading time. DCT tensors are pre-computed once into memory.
+
+```bash
+# 3-way CNN comparison
+uv run python -m dct_vision.ml.train --models pixelcnn,dctcnn --mode ycbcr --epochs 15
+# ResNet-18 with augmentation
+uv run python -m dct_vision.ml.train --models pixelresnet,dctresnet --augment --epochs 20
+```
+
+See `benchmarks/results/RESULTS.md` for the measured 3-way comparison and its
+honest interpretation (DCT trains ~7-8x faster; color recovers accuracy; the
+residual gap is CIFAR's small size after 8x block downsampling).
 
 ## Dataset caching
 

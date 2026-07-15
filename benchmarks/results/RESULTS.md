@@ -64,31 +64,53 @@ would decode anyway.
 DCT coefficients are pre-computed to an in-memory tensor cache once (ML-1c), so
 the data pipeline does no per-epoch DCT work.
 
-### ML-2: does a DCT-input CNN train correctly? (CIFAR-10, 15 epochs, no aug)
+Three inputs are compared fairly (same architecture, same augmentation):
+RGB pixels, DCT Y-only (grayscale), DCT YCbCr (full color). Comparing a Y-only
+DCT model to an RGB pixel model would be apples-to-oranges (grayscale vs color),
+so YCbCr is the fair color-matched comparison. On CIFAR the `from_array` path
+is 4:4:4, so the YCbCr tensor uses no lossy chroma upsampling.
 
-| Model     | Input       | Params  | Test acc | Train time | Data time |
-|-----------|-------------|---------|----------|------------|-----------|
-| PixelCNN  | RGB pixels  | 590 794 | 0.833    | 117.2 s    | 6.1 s     |
-| DCTVanillaCNN | DCT y_only | 556 106 | 0.579 | 16.8 s     | 3.9 s     |
-| DCTFreqBranchCNN | DCT y_only | 174 602 | 0.520 | 19.4 s | 4.0 s     |
+### ML-2: DCT-input CNN vs pixel CNN (CIFAR-10, 15 epochs, no aug)
+
+| Model            | Input        | Params  | Test acc | Train time | Data time |
+|------------------|--------------|---------|----------|------------|-----------|
+| PixelCNN         | RGB pixels   | 590 794 | 0.833    | 117.2 s    | 6.1 s     |
+| DCTVanillaCNN    | DCT y_only   | 556 106 | 0.579    | 16.8 s     | 3.9 s     |
+| DCTVanillaCNN    | DCT ycbcr    | 564 298 | 0.648    | 19.9 s     | -         |
+| DCTFreqBranchCNN | DCT y_only   | 174 602 | 0.520    | 19.4 s     | 4.0 s     |
 
 ### ML-3/ML-4: ResNet-18, pixel aug vs DCT aug (CIFAR-10, 20 epochs)
 
-| Model        | Input      | Params     | Test acc | Train time | Data time |
-|--------------|------------|------------|----------|------------|-----------|
-| PixelResNet18 | RGB pixels + hflip/crop | 11.17 M | 0.896 | 723.6 s | 10.6 s |
-| DCTResNet18  | DCT y_only + DCT hflip  | 11.18 M | 0.638 | 88.1 s  | 7.2 s  |
+| Model         | Input                   | Params  | Test acc | Train time |
+|---------------|-------------------------|---------|----------|------------|
+| PixelResNet18 | RGB pixels + hflip/crop | 11.17 M | 0.896    | 723.6 s    |
+| DCTResNet18   | DCT y_only + DCT hflip  | 11.18 M | 0.638    | 88.1 s     |
+| DCTResNet18   | DCT ycbcr + DCT hflip   | 11.19 M | 0.676    | 96.8 s     |
 
 ### Honest interpretation
 
-DCT input yields a **large, consistent training-speed advantage** (~7x for the
-CNN, ~8x for ResNet-18) because the network sees a 4x4x64 tensor instead of a
-32x32x3 image — far less spatial compute.
+DCT input yields a **large, consistent training-speed advantage** (~6-7x for the
+CNN, ~7.5-8x for ResNet-18) because the network sees a 4x4x{64,192} tensor
+instead of a 32x32x3 image -- far less spatial compute.
 
-The **accuracy gap does not close** on CIFAR-10 in this setup. This is expected,
-not a failure of the representation: CIFAR images are only 32x32, so DCT's 8x
-block downsampling leaves a 4x4 spatial grid, discarding spatial detail these
-architectures rely on. The Uber 2018 accuracy-parity result was on ImageNet,
-where 8x downsampling still leaves ~28x28 blocks. The path to parity here is
-larger inputs (STL-10, ImageNet), the 192-channel `ycbcr` mode, and
-architectures designed for the DCT block grid — future work, honestly labelled.
+Adding color (**YCbCr**) recovers **4-7 accuracy points** over Y-only (CNN
+0.579 -> 0.648; ResNet 0.638 -> 0.676), confirming that part of the Y-only gap
+was a color handicap rather than the representation.
+
+The remaining gap to pixel accuracy **does not close** on CIFAR-10, and this is
+expected, not a failure of the representation: CIFAR images are only 32x32, so
+DCT's 8x block downsampling leaves a 4x4 spatial grid, discarding spatial detail
+these architectures rely on. The speedup and the accuracy cost are two ends of
+the same dial (less spatial resolution = less compute). The Uber 2018
+accuracy-parity result was on ImageNet, where 8x downsampling still leaves ample
+resolution. The path to parity here is larger inputs (STL-10/ImageNet, supported
+via `--dataset stl10`) and architectures designed for the DCT block grid --
+future work, honestly labelled.
+
+## Notes / known limitations
+
+- Lossless transforms (rotate90/180/270, transpose, flips) are exact on 4:4:4
+  images (unit tests: PSNR > 55 dB / exact). On 4:2:0 (subsampled chroma) the
+  benchmark shows rotate/transpose at ~25 dB rather than exact, because the
+  chroma block grid transpose and pixel upsampling do not perfectly commute;
+  flips (no transpose) remain exact. Luma is unaffected.

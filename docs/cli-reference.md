@@ -110,6 +110,21 @@ dv edges input.jpg -o edges.jpg --method gradient
 | `-m / --method` | laplacian | Edge method: laplacian or gradient |
 | `-t / --timing` | false | Print execution time |
 
+### rotate
+
+Rotate an image losslessly (90-degree multiples, exact coefficient permutation).
+
+```bash
+dv rotate input.jpg -o rotated.jpg --degrees 90
+dv rotate input.jpg -o rotated.jpg --degrees 180
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-o / --output` | required | Output file path |
+| `-d / --degrees` | 90 | Clockwise rotation: 0, 90, 180, or 270 |
+| `-t / --timing` | false | Print execution time |
+
 ### convert
 
 Convert non-JPEG formats to JPEG via DCT representation.
@@ -176,3 +191,49 @@ dv augment input.jpg -o output.jpg --contrast-jitter 0.3 --seed 99
 | `--noise` | 0.0 | Gaussian noise sigma |
 | `--seed` | none | Random seed for reproducibility |
 | `-t / --timing` | false | Print execution time |
+
+## Applications
+
+Practical DCT-native tools under `dv apps`.
+
+### apps thumbnail
+
+Generate a thumbnail from DC coefficients (one array op, no IDCT).
+
+```bash
+dv apps thumbnail photo.jpg -o thumb.jpg --size 64
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-o / --output` | required | Output thumbnail path |
+| `-s / --size` | 64 | Longer-side size in pixels |
+| `-t / --timing` | false | Print execution time |
+
+### apps dedup
+
+Find near-duplicate images in a folder via DCT perceptual hashing.
+
+```bash
+dv apps dedup ./photos/ --max-distance 5
+dv apps dedup ./photos/ --json
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-d / --max-distance` | 5 | Max Hamming distance to treat two images as duplicates |
+| `--json` | false | Output groups as JSON |
+
+### apps forensics
+
+Detect JPEG double-compression from DCT coefficient histograms.
+
+```bash
+dv apps forensics suspect.jpg
+dv apps forensics suspect.jpg --json
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--threshold` | 12.0 | Comb-score threshold for flagging double compression |
+| `--json` | false | Output full result as JSON |
