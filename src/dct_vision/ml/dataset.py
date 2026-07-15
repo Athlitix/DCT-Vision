@@ -185,6 +185,7 @@ class DCTDataset(Dataset):
         mode: str = "y_only",
         resize_blocks: tuple[int, int] | None = None,
         augmentations: list | None = None,
+        seed: int | None = None,
     ):
         if mode not in VALID_MODES:
             raise ValueError(f"mode must be one of {VALID_MODES}, got '{mode}'")
@@ -198,7 +199,7 @@ class DCTDataset(Dataset):
         self._augmentations = None
         if augmentations:
             from dct_vision.ml.augment_pipeline import AugmentationPipeline
-            self._augmentations = AugmentationPipeline(augmentations)
+            self._augmentations = AugmentationPipeline(augmentations, seed=seed)
 
     def __len__(self) -> int:
         return len(self.paths)

@@ -57,6 +57,65 @@ class TestAugmentationPipeline:
         assert result.y_coeffs.shape[1] == 4
 
 
+class TestReproducibility:
+    def test_same_seed_identical(self):
+        specs = ["hflip:p=0.5", "noise:sigma=3.0", "brightness_jitter:max_offset=20"]
+        img = _make_img()
+        a = AugmentationPipeline(specs, seed=123)(img)
+        b = AugmentationPipeline(specs, seed=123)(img)
+        np.testing.assert_array_equal(a.y_coeffs, b.y_coeffs)
+
+    def test_different_seed_differs(self):
+        specs = ["noise:sigma=5.0"]
+        img = _make_img()
+        a = AugmentationPipeline(specs, seed=1)(img)
+        b = AugmentationPipeline(specs, seed=2)(img)
+        assert not np.array_equal(a.y_coeffs, b.y_coeffs)
+
+    def test_sequence_reproducible_across_calls(self):
+        specs = ["noise:sigma=4.0"]
+        img = _make_img()
+        p1 = AugmentationPipeline(specs, seed=7)
+        p2 = AugmentationPipeline(specs, seed=7)
+        seq1 = [p1(img).y_coeffs.copy() for _ in range(3)]
+        seq2 = [p2(img).y_coeffs.copy() for _ in range(3)]
+        for a, b in zip(seq1, seq2):
+            np.testing.assert_array_equal(a, b)
+
+    def test_reseed_resets_stream(self):
+        specs = ["noise:sigma=4.0"]
+        img = _make_img()
+        pipe = AugmentationPipeline(specs, seed=9)
+        first = pipe(img).y_coeffs.copy()
+        pipe.reseed(9)
+        again = pipe(img).y_coeffs.copy()
+        np.testing.assert_array_equal(first, again)
+
+    def test_worker_ids_diverge(self):
+        """Different DataLoader workers must not produce identical augmentations."""
+        specs = ["noise:sigma=5.0"]
+        img = _make_img()
+
+        class _FakeInfo:
+            def __init__(self, wid):
+                self.id = wid
+
+        import dct_vision.ml.augment_pipeline as ap
+
+        outputs = []
+        for wid in (0, 1):
+            pipe = AugmentationPipeline(specs, seed=100)
+            # Simulate being inside a specific DataLoader worker.
+            import torch.utils.data as tud
+            orig = tud.get_worker_info
+            tud.get_worker_info = lambda w=wid: _FakeInfo(w)
+            try:
+                outputs.append(pipe(img).y_coeffs.copy())
+            finally:
+                tud.get_worker_info = orig
+        assert not np.array_equal(outputs[0], outputs[1])
+
+
 class TestDatasetWithAugmentations:
     def test_augmented_dataset(self, tmp_path):
         # Create test images
