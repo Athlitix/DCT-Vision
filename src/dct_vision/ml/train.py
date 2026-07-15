@@ -100,22 +100,29 @@ def _precompute_dct_tensors(pixels_uint8: np.ndarray, block_grid, mode: str) -> 
     return torch.stack(out)
 
 
-# DCT-domain hflip on a y_only tensor: channel c encodes coefficient (u=c//8,
-# v=c%8). A horizontal flip reverses the width axis and negates channels whose
-# horizontal frequency index v is odd. This is the exact DCT flip, on tensors.
-def _y_only_hflip_signs() -> torch.Tensor:
-    v = torch.arange(64) % 8
-    return torch.where(v % 2 == 1, -1.0, 1.0).view(64, 1, 1)
+# DCT-domain hflip on a block tensor: within each 64-channel group the channel
+# index g encodes coefficient (u=g//8, v=g%8). A horizontal flip reverses the
+# width axis and negates channels whose horizontal frequency index v is odd.
+# This is the exact DCT flip, on tensors, and tiles across the Y/Cb/Cr groups
+# of a ycbcr (192-channel) tensor. Exact for modes with a full 64-coeff block
+# (y_only, ycbcr); not valid for dc_only.
+def _dct_hflip_signs(num_channels: int) -> torch.Tensor:
+    v = (torch.arange(num_channels) % 64) % 8
+    return torch.where(v % 2 == 1, -1.0, 1.0).view(num_channels, 1, 1)
 
 
 class DCTHFlipDataset(Dataset):
-    """Wrap a precomputed y_only DCT TensorDataset with random DCT-domain hflip."""
+    """Wrap a precomputed DCT TensorDataset with random DCT-domain hflip.
+
+    Works for y_only (64ch) and ycbcr (192ch) tensors -- the sign pattern tiles
+    across the Y/Cb/Cr coefficient groups.
+    """
 
     def __init__(self, tensors: torch.Tensor, labels: torch.Tensor, p: float = 0.5, seed: int = 0):
         self.tensors = tensors
         self.labels = labels
         self.p = p
-        self.signs = _y_only_hflip_signs()
+        self.signs = _dct_hflip_signs(tensors.shape[1])
         self.rng = np.random.default_rng(seed)
 
     def __len__(self):
@@ -306,7 +313,7 @@ def main():
         return DataLoader(ds, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
 
     def dct_train_loader():
-        if args.augment and args.mode == "y_only":
+        if args.augment and args.mode in ("y_only", "ycbcr"):
             ds = DCTHFlipDataset(tr_dct, tr_y_t, p=0.5)
         else:
             ds = TensorDataset(tr_dct, tr_y_t)

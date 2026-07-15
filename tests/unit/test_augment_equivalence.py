@@ -56,6 +56,27 @@ class TestFlipEquivalence:
         assert psnr(np.rot90(decoded, 2), out) > 55
 
 
+class TestTensorHFlipExact:
+    """The tensor-level DCT hflip used in training must equal the real DCT flip."""
+
+    @pytest.mark.parametrize("mode,channels", [("y_only", 64), ("ycbcr", 192)])
+    def test_tensor_hflip_matches_coeff_flip(self, mode, channels):
+        import torch
+
+        from dct_vision.ml.dataset import _coeffs_to_tensor_y_only, _coeffs_to_tensor_ycbcr
+        from dct_vision.ml.train import _dct_hflip_signs
+
+        to_tensor = {"y_only": _coeffs_to_tensor_y_only, "ycbcr": _coeffs_to_tensor_ycbcr}[mode]
+        img = DCTImage.from_array(_pattern(64, 64, color=True), quality=100)
+
+        base = to_tensor(img, None)                       # (C, bh, bw)
+        flipped_via_coeffs = to_tensor(horizontal_flip(img), None)
+        flipped_via_tensor = base.flip(-1) * _dct_hflip_signs(channels)
+
+        assert base.shape[0] == channels
+        assert torch.allclose(flipped_via_tensor, flipped_via_coeffs, atol=1e-4)
+
+
 class TestNoiseProperties:
     def test_dc_preserved(self):
         img = DCTImage.from_array(_pattern(64, 64), quality=90)
