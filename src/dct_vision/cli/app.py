@@ -555,3 +555,72 @@ def dataset_bench(
     typer.echo(f"Mode: {mode}, Resize: {rh}x{rw}, Batch: {batch_size}")
     typer.echo(f"Loaded {count} images in {elapsed*1000:.0f}ms")
     typer.echo(f"Throughput: {imgs_per_sec:.0f} images/sec")
+
+
+# -- Application commands (ML-5) --
+
+apps_app = typer.Typer(help="Practical DCT-native applications.")
+app.add_typer(apps_app, name="apps")
+
+
+@apps_app.command("dedup")
+def apps_dedup(
+    root: Path = typer.Argument(..., help="Image directory to scan.", exists=True),
+    max_distance: int = typer.Option(5, "--max-distance", "-d", help="Max Hamming distance for a match."),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON."),
+):
+    """Find near-duplicate images via DCT perceptual hashing."""
+    from dct_vision.apps.dedup import find_duplicates
+
+    groups = find_duplicates(str(root), max_distance=max_distance)
+    if json_output:
+        typer.echo(json.dumps(groups, indent=2))
+        return
+    if not groups:
+        typer.echo("No duplicate groups found.")
+        return
+    typer.echo(f"Found {len(groups)} duplicate group(s):")
+    for i, g in enumerate(groups, 1):
+        typer.echo(f"  Group {i} ({len(g)} images):")
+        for p in g:
+            typer.echo(f"    {p}")
+
+
+@apps_app.command("forensics")
+def apps_forensics(
+    input_path: Path = typer.Argument(..., help="JPEG to analyse.", exists=True),
+    threshold: float = typer.Option(12.0, "--threshold", help="Double-compression score threshold."),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON."),
+):
+    """Detect JPEG double-compression from DCT coefficient histograms."""
+    from dct_vision.apps.forensics import detect_double_compression
+
+    img = _load_image(input_path)
+    result = detect_double_compression(img, threshold=threshold)
+    if json_output:
+        typer.echo(json.dumps(result, indent=2))
+        return
+    verdict = "LIKELY double-compressed" if result["is_double_compressed"] else "likely single-compressed"
+    typer.echo(f"{input_path.name}: {verdict} (score={result['score']}, threshold={threshold})")
+
+
+@apps_app.command("thumbnail")
+def apps_thumbnail(
+    input_path: Path = typer.Argument(..., help="Input image.", exists=True),
+    output: Path = typer.Option(..., "--output", "-o", help="Output thumbnail path."),
+    size: int = typer.Option(64, "--size", "-s", help="Longer-side size in pixels."),
+    timing: bool = typer.Option(False, "--timing", "-t", help="Print execution time."),
+):
+    """Generate a thumbnail from DC coefficients (no IDCT)."""
+    from PIL import Image as _Image
+
+    from dct_vision.apps.thumbnail import dc_thumbnail
+
+    img = _load_image(input_path)
+    thumb, elapsed = _timed(lambda: dc_thumbnail(img, size=size))
+    mode = "L" if thumb.ndim == 2 else "RGB"
+    _Image.fromarray(thumb, mode=mode).save(str(output))
+
+    _echo(f"Thumbnail {input_path.name} -> {output.name} ({thumb.shape[1]}x{thumb.shape[0]})")
+    if timing:
+        _echo(f"Time: {elapsed:.1f}ms")

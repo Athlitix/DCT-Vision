@@ -76,6 +76,30 @@ class TestRotateCommand:
         assert result.exit_code != 0
 
 
+class TestAppsCommands:
+    def test_thumbnail(self, sample_jpeg, tmp_path):
+        output = tmp_path / "thumb.jpg"
+        result = runner.invoke(app, [
+            "apps", "thumbnail", str(sample_jpeg), "-o", str(output), "--size", "32"
+        ])
+        assert result.exit_code == 0, result.output
+        assert output.exists()
+
+    def test_forensics(self, sample_jpeg):
+        result = runner.invoke(app, ["apps", "forensics", str(sample_jpeg), "--json"])
+        assert result.exit_code == 0, result.output
+        assert "score" in result.output
+
+    def test_dedup(self, sample_jpeg, tmp_path):
+        import shutil
+        d = tmp_path / "imgs"
+        d.mkdir()
+        shutil.copy(str(sample_jpeg), str(d / "a.jpg"))
+        shutil.copy(str(sample_jpeg), str(d / "b.jpg"))
+        result = runner.invoke(app, ["apps", "dedup", str(d), "--max-distance", "2"])
+        assert result.exit_code == 0, result.output
+
+
 class TestBrightnessCommand:
     def test_basic_brightness(self, sample_jpeg, tmp_path):
         output = tmp_path / "bright.jpg"
