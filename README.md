@@ -6,6 +6,36 @@ Frequency-domain native image processing. Operates directly on JPEG DCT coeffici
 
 JPEG images are already stored as DCT coefficients. Decoding to pixels just to blur/sharpen/adjust is wasteful. DCT-Vision works directly on the coefficients -- many operations become simple multiplications instead of expensive convolutions.
 
+## What's new in 0.3.0
+
+- **Quality metrics** (`dct_vision.math.metrics`): PSNR/SSIM/MSE, SSIM validated against scikit-image.
+- **Honest benchmarks**: every operation now reports quality (PSNR/SSIM) and peak memory alongside speed, plus an **end-to-end** (load+op+save) comparison -- not just op-only timing.
+- **Lossless geometry**: 90/180/270 rotation and transpose (`dv rotate`), bit-exact on all chroma subsampling modes.
+- **ML**: DCT/pixel ResNet-18, in-memory DCT precompute cache, reproducible seeded augmentation, and a fair 3-way comparison (pixel-RGB vs DCT-Y-only vs DCT-YCbCr).
+- **Applications** (`dv apps`): near-duplicate detection, JPEG double-compression forensics, instant DC-only thumbnails.
+- **Fixes**: 8x brightness DC-offset calibration, grayscale writer level-shift, downscale ~5x faster (BLAS matmul).
+
+Full history: [CHANGELOG.md](CHANGELOG.md). Detailed results and methodology: [`benchmarks/results/RESULTS.md`](benchmarks/results/RESULTS.md).
+
+## Findings: where DCT wins and where it loses
+
+The honest bottom line from the measurements ([full results](benchmarks/results/RESULTS.md)):
+
+**DCT wins**
+- **Pointwise ops vs Pillow** (brightness, contrast, sharpen, blur, edges): 12-19x faster.
+- **Brightness / contrast / noise vs OpenCV**: several-fold faster (these dodge OpenCV's SIMD strengths).
+- **Exact, lossless transforms**: brightness, flips, crop, 90/180/270 rotation, transpose -- zero quality loss, no IDCT.
+- **End-to-end on expensive ops and large images**, and in **batch pipelines** that would otherwise decode every image.
+- **Frequency-native tasks** where the signal is in the coefficients: forensics, thumbnails, perceptual-hash dedup are fast and natural.
+
+**DCT loses (or ties)**
+- **vs OpenCV's SIMD** on cheap geometric ops (flips, rotate, crop) and resampling (downscale) and edges -- OpenCV is highly optimized here.
+- **End-to-end on cheap ops** at small sizes: libjpeg-turbo decode is already fast, so skipping it saves little.
+- **Approximate ops** (blur, downscale, edges) trade some quality vs their spatial equivalents (see PSNR/SSIM below).
+- **Not translation-invariant**: a sub-block pixel shift changes all coefficients -- a real limitation for some tasks.
+
+**ML finding** ([ML results](benchmarks/results/RESULTS.md#ml-experiments)): DCT input trains **~7-8x faster** (the network sees a 4x4 block grid, not a 32x32 image) but does **not** match pixel accuracy on CIFAR-10. Color (YCbCr) recovers 4-7 points over Y-only; the residual gap is CIFAR's tiny size after 8x block downsampling, not a flaw in the representation. Speed and the accuracy cost are two ends of the same dial.
+
 ## Performance
 
 Full methodology and raw numbers: [`benchmarks/results/RESULTS.md`](benchmarks/results/RESULTS.md)
